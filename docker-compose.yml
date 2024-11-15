@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8081:80"
+    volumes:
+      - ./project/backend/src:/var/www/html
+      - composer_vendor:/var/www/html/vendor 
+      - ./composer.json:/var/www/html/composer.json
+      - ./phpunit.xml:/var/www/html/phpunit.xml
+      - ./project/tests:/var/www/html/tests
+    environment:
+      - DB_HOST=db
+      - DB_USER=user
+      - DB_PASS=password
+      - DB_NAME=database
+      - DB_CHARSET=utf8mb4
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOWED_METHODS=GET, POST, OPTIONS
+      - CORS_ALLOWED_HEADERS=Content-Type
+      - DISPLAY_ERRORS=1
+      - COMPOSER_ALLOW_SUPERUSER=1
+      - XDEBUG_MODE=coverage
+    user: "1000:1000" 
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./project/frontend/src:/usr/src/app/src
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  mysql_data:
+  composer_vendor: 

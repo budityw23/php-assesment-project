@@ -1,0 +1,37 @@
+{
+    "name": "littlelives/assessment-project",
+    "description": "LittleLives Assessment Project",
+    "type": "project",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "classmap": [
+            "/var/www/html"
+        ],
+        "files": [
+            "/var/www/html/config.php"
+        ],
+        "psr-4": {
+            "Exception\\": "/var/www/html/Exception/",
+            "Model\\": "/var/www/html/Model/",
+            "Service\\": "/var/www/html/Service/",
+            "Controller\\": "/var/www/html/Controller/",
+            "Validator\\": "/var/www/html/Validator/",
+            "": "/var/www/html/"
+        }
+    },
+    "autoload-dev": {
+        "classmap": [
+            "tests/"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-text",
+        "test-verbose": "phpunit -v"
+    }
+}

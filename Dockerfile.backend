@@ -1,0 +1,73 @@
+FROM php:7.4-apache
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    zip \
+    unzip
+
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mysqli mbstring exif pcntl bcmath gd zip
+
+# Install Xdebug 3.1.5 (last version supporting PHP 7.4)
+RUN pecl channel-update pecl.php.net && \
+    apt-get update && \
+    apt-get install -y $PHPIZE_DEPS && \
+    pecl install xdebug-3.1.5 && \
+    docker-php-ext-enable xdebug
+
+# Enable Apache modules
+RUN a2enmod rewrite headers
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Create non-root user for Composer
+RUN useradd -G www-data,root -u 1000 -d /home/dev dev
+RUN mkdir -p /home/dev/.composer && \
+    chown -R dev:dev /home/dev
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application files first
+COPY ./project/backend/src/ /var/www/html/
+
+# Copy composer files
+COPY composer.json phpunit.xml /var/www/html/
+
+# Set permissions before installing dependencies
+RUN chown -R dev:www-data /var/www/html \
+    && chmod -R 775 /var/www/html
+
+# Switch to non-root user
+USER dev
+
+# Install dependencies and generate autoloader
+RUN composer install --no-dev \
+    && composer dump-autoload --optimize
+
+# Switch back to root for final configuration
+USER root
+
+# Configure PHP
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+
+# Update Apache configuration
+COPY ./project/docker/apache/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Final permission setup
+RUN chown -R dev:www-data /var/www/html \
+    && chmod -R 775 /var/www/html
+
+EXPOSE 80
+
+CMD ["apache2-foreground"]
